@@ -1019,16 +1019,16 @@ class Feed
 
         // list of format for each info in order of importance
         $formats = array(
-            'author'      => array('author', 'creator', 'dc:author',
-                                   'dc:creator'),
-            'content'     => array('content:encoded', 'content', 'description',
+            'author'      => array('author', 'creator', 'dc_author',
+                                   'dc_creator'),
+            'content'     => array('content_encoded', 'content', 'description',
                                'summary', 'subtitle'),
             'description' => array('description', 'summary', 'subtitle',
-                                   'content', 'content:encoded'),
+                                   'content', 'content_encoded'),
             'via'        => array('guid', 'id'),
-            'link'        => array('feedburner:origLink', 'link', 'guid', 'id'),
+            'link'        => array('feedburner_origLink', 'link', 'guid', 'id'),
             'time'        => array('pubDate', 'updated', 'lastBuildDate',
-                                   'published', 'dc:date', 'date', 'created',
+                                   'published', 'dc_date', 'date', 'created',
                                    'modified'),
             'title'       => array('title'));
 
@@ -1242,6 +1242,8 @@ class Feed
                 $lastModified = $output['last-modified'];
             }
 
+            // some versions of xml have problems to load namespaces...
+            $output['data'] = preg_replace('~(</?|\s)([a-z0-9_]+):~is', '$1$2_', $output['data']);
             $document->loadXML($output['data']);
         } else {
             // try using libxml
