@@ -1243,8 +1243,10 @@ class Feed
             }
 
             // some versions of xml have problems to load namespaces...
-            $output['data'] = preg_replace('~(</?|\s)([a-z0-9_]+):~is', '$1$2_', $output['data']);
-            $document->loadXML($output['data']);
+            $fromStr = array ("<dc:", "</dc:", "content:encoded>", "feedburner:origLink>");
+            $toStr   = array ("<dc_", "</dc_", "content_encoded>", "feedburner_origLink>");
+            $newOutputData = str_replace($fromStr, $toStr, $output['data']);
+            $document->loadXML($newOutputData);
         } else {
             // try using libxml
             $context = stream_context_create($opts);
