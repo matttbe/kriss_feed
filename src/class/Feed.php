@@ -180,7 +180,7 @@ class Feed
      */
     public function getFeedsView()
     {
-        $feedsView = array('all' => array('title' => 'All feeds', 'nbUnread' => 0, 'nbAll' => 0, 'feeds' => array()), 'folders' => array());
+        $feedsView = array('all' => array('title' => Intl::msg('All feeds'), 'nbUnread' => 0, 'nbAll' => 0, 'feeds' => array()), 'folders' => array());
         
         foreach ($this->_data['feeds'] as $feedHash => $feed) {
             if (isset($feed['error'])) {
@@ -247,6 +247,8 @@ class Feed
 
     /**
      * Return a link to favicon
+     * TODO: Try using Bronco one :
+     * http://www.warriordudimanche.net/article164/hands-up-give-me-your-favicon-right-now
      *
      * @param string $feedHash Hash corresponding to a feed
      *
