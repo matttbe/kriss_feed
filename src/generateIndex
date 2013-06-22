@@ -7,23 +7,25 @@ function echoerr() {
 }
 
 # generate Intl plugins
-for i in locale/*
-do
-  if [ -d $i ]
-  then
-    lang=$(basename $i)
-    echo '<?php' > plugins/$lang.php
-    echo 'if (!function_exists('"'$lang'"')) {' >> plugins/$lang.php
-    echo '    function '"$lang"'(&$messages) {' >> plugins/$lang.php
-    echo '        $messages['"'$lang'"'] = unserialize(gzinflate(base64_decode("' >> plugins/$lang.php 
-    php5 -r "include('class/Plugin.php');include('class/Intl.php');Intl::init('$lang');echo base64_encode(gzdeflate(serialize(Intl::load('$lang'))));" >> plugins/$lang.php
-    echo '")));' >> plugins/$lang.php
-    echo '    }' >> plugins/$lang.php
-    echo '}' >> plugins/$lang.php
-    echo "Plugin::addHook('Intl_init_$lang', '$lang');" >> plugins/$lang.php
-    echo  >> plugins/$lang.php
-  fi
-done
+if [ "`php5`" ]; then
+  for i in locale/*
+  do
+    if [ -d $i ]
+    then
+      lang=$(basename $i)
+      echo '<?php' > plugins/$lang.php
+      echo 'if (!function_exists('"'$lang'"')) {' >> plugins/$lang.php
+      echo '    function '"$lang"'(&$messages) {' >> plugins/$lang.php
+      echo '        $messages['"'$lang'"'] = unserialize(gzinflate(base64_decode("' >> plugins/$lang.php 
+      php5 -r "include('class/Plugin.php');include('class/Intl.php');Intl::init('$lang');echo base64_encode(gzdeflate(serialize(Intl::load('$lang'))));" >> plugins/$lang.php
+      echo '")));' >> plugins/$lang.php
+      echo '    }' >> plugins/$lang.php
+      echo '}' >> plugins/$lang.php
+      echo "Plugin::addHook('Intl_init_$lang', '$lang');" >> plugins/$lang.php
+      echo  >> plugins/$lang.php
+    fi
+  done
+fi
 
 
 n=$(\grep "function __autoload" ${file} -n | cut -d ":" -f 1)

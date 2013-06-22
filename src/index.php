@@ -1594,7 +1594,7 @@ dd {
                 </div>
                 <div class="control-group">
                   <div class="controls">
-                    <label><input type="checkbox" name="longlastingsession" tabindex="3">&nbsp;<?php echo Intl::msg('Stay signed in (do not check on public computers)'); ?></label>
+                    <label><input type="checkbox" name="longlastingsession" tabindex="3" checked>&nbsp;<?php echo Intl::msg('Stay signed in (do not check on public computers)'); ?></label>
                   </div>
                 </div>
                 
