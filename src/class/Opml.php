@@ -95,21 +95,32 @@ class Opml
                 }
             }
 
-            echo '<script>alert("File '
-                . htmlspecialchars($filename) . ' (' . MyTool::humanBytes($filesize)
-                . ') was successfully processed: ' . $importCount
-                . ' links imported.");document.location=\'?\';</script>';
+            FeedPage::init(
+                array(
+                    'message' => Intl::msg('File %s (%s) was successfully processed: %d links imported'),
+                    'referer' => MyTool::getUrl(),
+                    'version' => $this->version,
+                    'pagetitle' => 'KrISS feed installation'
+                )
+            );
+            FeedPage::messageTpl();
 
             $kfData['feeds'] = $feeds;
             $kfData['folders'] = $folders;
 
             return $kfData;
         } else {
-            echo '<script>alert("File ' . htmlspecialchars($filename) . ' ('
-                . MyTool::humanBytes($filesize) . ') has an unknown'
-                . ' file format. Check encoding, try to remove accents'
-                . ' and try again. Nothing was imported.");'
-                . 'document.location=\'?\';</script>';
+
+            FeedPage::init(
+                array(
+                    'class' => 'text-success',
+                    'message' => Intl::msg('File %s (%s) has an unknown file format. Check encoding, try to remove accents and try again. Nothing was imported.'),
+                    'referer' => MyTool::getUrl().'?import',
+                    'version' => $this->version,
+                    'pagetitle' => 'KrISS feed installation'
+                )
+            );
+            FeedPage::messageTpl();
             exit;
         }
     }
@@ -196,9 +207,6 @@ class Opml
         // with folder outline node
         foreach ($withFolder as $folderHash => $arrayHashUrl) {
             $outline = $opmlData->createElement('outline');
-            $outlineTitle = $opmlData->createAttribute('title');
-            $outlineTitle->value = htmlspecialchars($folders[$folderHash]['title']);
-            $outline->appendChild($outlineTitle);
             $outlineText = $opmlData->createAttribute('text');
             $outlineText->value = htmlspecialchars($folders[$folderHash]['title']);
             $outline->appendChild($outlineText);

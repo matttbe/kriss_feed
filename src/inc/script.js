@@ -386,15 +386,19 @@
         sel = '«' + sel + '»';
       }
 
-      window.open(
-        shaarli
-        .replace('${url}', encodeURIComponent(htmlspecialchars_decode(url)))
-        .replace('${title}', encodeURIComponent(htmlspecialchars_decode(title)))
-        .replace('${via}', encodeURIComponent(htmlspecialchars_decode(via)))
-        .replace('${sel}', encodeURIComponent(htmlspecialchars_decode(sel))),
-        '_blank',
-        'height=390, width=600, menubar=no, toolbar=no, scrollbars=no, status=no'
-      );
+      if (shaarli !== '') {
+        window.open(
+          shaarli
+          .replace('${url}', encodeURIComponent(htmlspecialchars_decode(url)))
+          .replace('${title}', encodeURIComponent(htmlspecialchars_decode(title)))
+          .replace('${via}', encodeURIComponent(htmlspecialchars_decode(via)))
+          .replace('${sel}', encodeURIComponent(htmlspecialchars_decode(sel))),
+          '_blank',
+          'height=390, width=600, menubar=no, toolbar=no, scrollbars=no, status=no'
+        );
+      } else {
+        alert('Please configure your share link first');
+      }
     } else {
       loadDivItem(itemHash);
       alert('Sorry ! This item is not loaded, try again !');
@@ -535,10 +539,10 @@
         if (hasClass(listLinks[i], 'item-mark-as')) {
           if (listLinks[i].href.indexOf('unread=') > -1) {
             listLinks[i].href = listLinks[i].href.replace('unread=','read=');
-            listLinks[i].firstChild.innerHTML = 'read';
+            listLinks[i].firstChild.innerHTML = intlRead;
           } else {
             listLinks[i].href = listLinks[i].href.replace('read=','unread=');
-            listLinks[i].firstChild.innerHTML = 'unread';
+            listLinks[i].firstChild.innerHTML = intlUnread;
           }
         }
       }
@@ -660,10 +664,10 @@
           url = listLinks[i].href;
           if (listLinks[i].href.indexOf('unstar=') > -1) {
             listLinks[i].href = listLinks[i].href.replace('unstar=','star=');
-            listLinks[i].firstChild.innerHTML = 'star';
+            listLinks[i].firstChild.innerHTML = intlStar;
           } else {
             listLinks[i].href = listLinks[i].href.replace('star=','unstar=');
-            listLinks[i].firstChild.innerHTML = 'unstar';
+            listLinks[i].firstChild.innerHTML = intlUnstar;
           }
         }
       }

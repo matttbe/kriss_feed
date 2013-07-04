@@ -148,7 +148,7 @@ class FeedConf
     /**
      * language (en_GB, fr_FR, etc.)
      */
-    public $lang = 'en_GB';
+    public $lang = '';
 
     /**
      * menu personnalization
@@ -176,13 +176,14 @@ class FeedConf
     /**
      * Constructor
      *
-     * @param string    $configFile Configuration file
-     * @param string    $version    Kriss feed version
+     * @param string $configFile Configuration file
+     * @param string $version    Kriss feed version
      */
     public function __construct($configFile, $version)
     {
         $this->_file = $configFile;
         $this->version = $version;
+        $this->lang = Intl::$lang;
 
         // Loading user config
         if (file_exists($this->_file)) {
@@ -197,12 +198,14 @@ class FeedConf
             /* favicon dir */
             if (!is_dir(INC_DIR)) {
                 if (!@mkdir(INC_DIR, 0755)) {
-                    die("Can not create inc dir: ".INC_DIR);
+                    $pb->assign('message', sprintf(Intl::msg('Can not create %s directory, check permissions'), INC_DIR));
+                    $pb->renderPage('message');
                 }
             }
             if (!is_dir(FAVICON_DIR)) {
                 if (!@mkdir(FAVICON_DIR, 0755)) {
-                    die("Can not create inc dir: ".FAVICON_DIR);
+                    $pb->assign('message', sprintf(Intl::msg('Can not create %s directory, check permissions'), FAVICON_DIR));
+                    $pb->renderPage('message');
                 }
             }
         }
@@ -248,6 +251,8 @@ class FeedConf
             $_SESSION['byPage'] = $byPage;
             $_SESSION['lang'] = $lang;
         }
+
+        Intl::$lang = $this->lang;
     }
 
     /**
@@ -261,17 +266,23 @@ class FeedConf
             $this->setHash($_POST['setpassword']);
 
             $this->write();
-            echo '
-<script>
- alert("Your simple and smart (or stupid) feed reader is now configured.");
- document.location="'.MyTool::getUrl().'?import'.'";
-</script>';
-            exit();
+
+            FeedPage::init(
+                array(
+                    'class' => 'text-success',
+                    'message' => Intl::msg('Your simple and smart (or stupid) feed reader is now configured.'),
+                    'referer' => MyTool::getUrl().'?import',
+                    'button' => Intl::msg('Continue'),
+                    'version' => $this->version,
+                    'pagetitle' => 'KrISS feed installation'
+                )
+            );
+            FeedPage::messageTpl();
         } else {
             FeedPage::init(
                 array(
                     'version' => $this->version,
-                    'pagetitle' => 'KrISS feed installation'
+                    'pagetitle' => Intl::msg('KrISS feed installation')
                 )
             );
             FeedPage::installTpl();
@@ -300,9 +311,9 @@ class FeedConf
     }
 
     /**
-     * Get current lang
+     * Get lang
      *
-     * @return string 'en_GB', 'fr_FR', etc.
+     * @return string 
      */
     public function getLang()
     {
@@ -311,6 +322,10 @@ class FeedConf
             $lang = $_GET['lang'];
         } else if (isset($_SESSION['lang'])) {
             $lang = $_SESSION['lang'];
+        }
+
+        if (!in_array($lang, array_keys(Intl::$langList))) {
+            $lang = $this->lang;
         }
 
         return $lang;
@@ -449,14 +464,14 @@ class FeedConf
     {
         $currentPage = $this->currentPage;
         if (isset($_GET['page']) && !empty($_GET['page'])) {
-            $currentPage = (int)$_GET['page'];
+            $currentPage = (int) $_GET['page'];
         } else if (isset($_GET['previousPage']) && !empty($_GET['previousPage'])) {
-            $currentPage = (int)$_GET['previousPage'] - 1;
+            $currentPage = (int) $_GET['previousPage'] - 1;
             if ($currentPage < 1) {
                 $currentPage = 1;
             }
         } else if (isset($_GET['nextPage']) && !empty($_GET['nextPage'])) {
-            $currentPage = (int)$_GET['nextPage'] + 1;
+            $currentPage = (int) $_GET['nextPage'] + 1;
         }
 
         return $currentPage;
@@ -662,6 +677,11 @@ class FeedConf
         $this->blank = $blank;
     }
 
+    /**
+     * Get menu
+     *
+     * @return array of menu sorted elements
+     */
     public function getMenu()
     {
         $menu = array();
@@ -840,11 +860,9 @@ class FeedConf
                           'pagingMarkAs', 'disableSessionProtection', 'blank', 'lang');
             $out = '<?php';
             $out .= "\n";
-
             foreach ($data as $key) {
                 $out .= '$this->'.$key.' = '.var_export($this->$key, true).";\n";
             }
-
             $out .= '?>';
 
             if (!@file_put_contents($this->_file, $out)) {

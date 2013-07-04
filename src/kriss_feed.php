@@ -2,6 +2,7 @@
 // kriss_feed simple and smart (or stupid) feed reader
 // 2012 - Copyleft - Tontof - http://tontof.net
 // use KrISS feed at your own risk
+define('BASE_URL', '');
 define('DATA_DIR', 'data');
 define('INC_DIR', 'inc');
 define('CACHE_DIR', DATA_DIR.'/cache');
@@ -32,32 +33,7 @@ define('ERROR_LAST_UPDATE', 3);
 define('ERROR_UNKNOWN', 4);
 
 // fix some warning
-date_default_timezone_set('Europe/Paris'); 
-
-if (!is_dir(DATA_DIR)) {
-    if (!@mkdir(DATA_DIR, 0755)) {
-        echo '
-<script>
- alert("Error: can not create '.DATA_DIR.' directory, check permissions");
- document.location=window.location.href;
-</script>';
-        exit();
-    }
-    @chmod(DATA_DIR, 0755);
-    if (!is_file(DATA_DIR.'/.htaccess')) {
-        if (!@file_put_contents(
-                DATA_DIR.'/.htaccess',
-                "Allow from none\nDeny from all\n"
-                )) {
-            echo '
-<script>
- alert("Can not protect '.DATA_DIR.'");
- document.location=window.location.href;
-</script>';
-            exit();
-        }
-    }
-}
+date_default_timezone_set('Europe/Paris');
 
 /**
  * autoload class
@@ -66,17 +42,65 @@ if (!is_dir(DATA_DIR)) {
  */
 function __autoload($className)
 {
-    include_once 'class/'. $className . '.php';
+    if (file_exists('class/'. $className . '.php')) {
+        include_once 'class/'. $className . '.php';
+    }
 }
+
+Plugin::init();
+
+/* ?><?php include("plugins"); ?><?php */
 
 // Check if php version is correct
 MyTool::initPHP();
 // Initialize Session
-Session::init(BAN_FILE);
+Session::init('kriss', BAN_FILE);
+
+// Initialize internationalization
+Intl::addLang('en_GB', 'English (Great Britain)', 'flag-gb');
+Intl::addLang('en_US', 'English (America)', 'flag-us');
+Intl::init();
+
+MyTool::$opts = array(
+    'http' => array(
+        'timeout' => 4,
+        'user_agent' => 'KrISS feed agent '.FEED_VERSION.' by Tontof.net http://tontof.net/kriss/feed',
+        )
+    );
+
+$ref = MyTool::getUrl();
+$referer = (empty($_SERVER['HTTP_REFERER'])?'?':$_SERVER['HTTP_REFERER']);
+if (substr($referer, 0, strlen($ref)) !== $ref) {
+    $referer = $ref;
+}
+
+$pb = new PageBuilder('FeedPage');
+$pb->assign('version', FEED_VERSION);
+$pb->assign('pagetitle', 'KrISS feed');
+$pb->assign('referer', $referer);
+
+if (!is_dir(DATA_DIR)) {
+    if (!@mkdir(DATA_DIR, 0755)) {
+        $pb->assign('message', sprintf(Intl::msg('Can not create %s directory, check permissions'), DATA_DIR));
+        $pb->renderPage('message');
+    }
+    @chmod(DATA_DIR, 0755);
+    if (!is_file(DATA_DIR.'/.htaccess')) {
+        if (!@file_put_contents(
+            DATA_DIR.'/.htaccess',
+            "Allow from none\nDeny from all\n"
+        )) {
+            $pb->assign('message', sprintf(Intl::msg('Can not protect %s directory with .htaccess, check permissions'), DATA_DIR));
+            $pb->renderPage('message');
+        }
+    }
+}
+
 // XSRF protection with token
 if (!empty($_POST)) {
     if (!Session::isToken($_POST['token'])) {
-        die('Wrong token.');
+        $pb->assign('message', Intl::msg('Wrong token'));
+        $pb->renderPage('message');
     }
     unset($_SESSION['tokens']);
 }
@@ -85,14 +109,7 @@ $kfc = new FeedConf(CONFIG_FILE, FEED_VERSION);
 $kf = new Feed(DATA_FILE, CACHE_DIR, $kfc);
 $ks = new Star(STAR_FILE, ITEM_FILE, $kfc);
 
-$pb = new PageBuilder('FeedPage');
 $kfp = new FeedPage(STYLE_FILE);
-
-Plugin::init();
-
-/* ?><?php include("plugins"); ?><?php */
-
-Intl::init($kfc->lang);
 
 // List or Expanded ?
 $view = $kfc->view;
@@ -115,6 +132,11 @@ if (!empty($currentHash) and $currentHash !== 'all') {
     $query .= 'currentHash='.$currentHash.'&';
 }
 
+$base = BASE_URL;
+if (empty($bases)) {
+    $base = MyTool::getUrl();
+}
+
 $pb->assign('view', $view);
 $pb->assign('listFeeds', $listFeeds);
 $pb->assign('filter', $filter);
@@ -133,9 +155,9 @@ $pb->assign('addFavicon', $kfc->addFavicon);
 $pb->assign('preload', $kfc->preload);
 $pb->assign('blank', $kfc->blank);
 $pb->assign('kf', $kf);
-$pb->assign('version', FEED_VERSION);
-$pb->assign('kfurl', MyTool::getUrl());
+$pb->assign('base', $base);
 $pb->assign('isLogged', $kfc->isLogged());
+$pb->assign('pagetitle', strip_tags($kfc->title));
 
 if (isset($_GET['login'])) {
     // Login
@@ -161,7 +183,8 @@ if (isset($_GET['login'])) {
 
             MyTool::redirect();
         }
-        die("Login failed !");
+        $pb->assign('message', Intl::msg('Login failed!'));
+        $pb->renderPage('message');
     } else {
         $pb->assign('pagetitle', Intl::msg('Sign in').' - '.strip_tags($kfc->title));
         $pb->renderPage('login');
@@ -247,7 +270,7 @@ if (isset($_GET['login'])) {
             }
         }
         $i = 0;
-        foreach(array_slice($results, $firstIndex + 1, count($results) - $firstIndex - 1, true) as $itemHash => $item) {
+        foreach (array_slice($results, $firstIndex + 1, count($results) - $firstIndex - 1, true) as $itemHash => $item) {
             if (isset($_GET['stars'])) {
                 $result['page'][$i] = $kf->getItem($itemHash);
             } else {
@@ -271,8 +294,6 @@ if (isset($_GET['login'])) {
                 $info = $kf->updateChannel($_GET['update']);
                 if (empty($info['error'])) {
                     $info['error'] = $feed['description'];
-                } else {
-                    $info['error'] = $kf->getError($info['error']);
                 }
                 $info['newItems'] = array_keys($info['newItems']);
                 $result['update'] = $info;
@@ -337,6 +358,9 @@ if (isset($_GET['login'])) {
         $pb->assign('pagetitle', Intl::msg('Update').' - '.strip_tags($kfc->title));
         $pb->renderPage('update');
     }
+} elseif (isset($_GET['plugins']) && $kfc->isLogged()) {
+    $pb->assign('pagetitle', Intl::msg('Plugins management').' - '.strip_tags($kfc->title));
+    $pb->renderPage('plugins');
 } elseif (isset($_GET['config']) && $kfc->isLogged()) {
     // Config
     if (isset($_POST['save'])) {
@@ -388,15 +412,12 @@ if (isset($_GET['login'])) {
             $rurl = empty($_SERVER['HTTP_REFERER'])
                 ? '?'
                 : $_SERVER['HTTP_REFERER'];
-            echo '<script>alert("The file you are trying to upload'
-                . ' is probably bigger than what this webserver can accept '
-                . '(' . MyTool::humanBytes(MyTool::getMaxFileSize())
-                . ' bytes). Please upload in smaller chunks.");'
-                . 'document.location=\'' . htmlspecialchars($rurl)
-                . '\';</script>';
-            exit;
+
+            $pb->assign('message', sprintf(Intl::msg('The file you are trying to upload is probably bigger than what this webserver can accept (%s). Please upload in smaller chunks.'), MyTool::humanBytes(MyTool::getMaxFileSize())));
+            $pb->assign('referer', $rurl);
+            $pb->renderPage('message');
         }
-        
+
         $kf->loadData();
         $kf->setData(Opml::importOpml($kf->getData()));
         $kf->sortFeeds();
@@ -417,7 +438,8 @@ if (isset($_GET['login'])) {
     $kf->loadData();
 
     if (isset($_POST['newfeed']) && !empty($_POST['newfeed'])) {
-        if ($kf->addChannel($_POST['newfeed'])) {
+        $addc = $kf->addChannel($_POST['newfeed']);
+        if (empty($addc['error'])) {
             // Add success
             $folders = array();
             if (!empty($_POST['folders'])) {
@@ -437,14 +459,8 @@ if (isset($_GET['login'])) {
             MyTool::redirect('?currentHash='.$hash);
         } else {
             // Add fail
-            $returnurl = empty($_SERVER['HTTP_REFERER'])
-                ? MyTool::getUrl()
-                : $_SERVER['HTTP_REFERER'];
-            echo '<script>alert("The feed you are trying to add already exists'
-                . ' or is wrong. Check your feed or try again later.");'
-                . 'document.location=\'' . htmlspecialchars($returnurl)
-                . '\';</script>';
-            exit;
+            $pb->assign('message', $addc['error']);
+            $pb->renderPage('message');
         }
     }
 
@@ -456,7 +472,7 @@ if (isset($_GET['login'])) {
     $pb->assign('pagetitle', Intl::msg('Add a new feed').' - '.strip_tags($kfc->title));
     $pb->assign('newfeed', $newfeed);
     $pb->assign('folders', $kf->getFolders());
-    
+
     $pb->renderPage('addFeed');
 } elseif (isset($_GET['toggleFolder']) && $kfc->isLogged()) {
     $kf->loadData();
@@ -508,7 +524,7 @@ if (isset($_GET['login'])) {
 
         $item = $kf->loadItem($hash, false);
         $feed = $kf->getFeed(substr($hash, 0, 6));
-        
+
         $needSave = $ks->markItem($hash, $starred, $feed, $item);
     } else {
         $hash = $_GET['unstar'];
@@ -549,9 +565,9 @@ if (isset($_GET['login'])) {
         if (isset($_GET['next'])) {
             if ($index < count($listHash)-1) {
                 $index++;
-            } 
+            }
         }
-        
+
         if (isset($_GET['previous'])) {
             if ($index > 0) {
                 $index--;
@@ -564,7 +580,7 @@ if (isset($_GET['login'])) {
     } else {
         $index = count($listHash) - 1;
     }
-    
+
     // pagination
     $currentPage = (int) ($index/$byPage)+1;
     if ($currentPage <= 0) {
@@ -573,10 +589,10 @@ if (isset($_GET['login'])) {
     $begin = ($currentPage - 1) * $byPage;
     $maxPage = (count($listItems) <= $byPage) ? '1' : ceil(count($listItems) / $byPage);
     $nbItems = count($listItems);
-    
+
     // list items
     $listItems = array_slice($listItems, $begin, $byPage, true);
-    
+
     // type : 'feed', 'folder', 'all', 'item'
     $currentHashType = $kf->hashType($currentHash);
     $hashView = '';
@@ -594,15 +610,15 @@ if (isset($_GET['login'])) {
         $hashView = '<span id="nb-starred">'.$nbItems.'</span><span class="hidden-phone"> '.Intl::msg('starred items').'</span>';
         break;
     }
-    
+
     $menu = $kfc->getMenu();
     $paging = $kfc->getPaging();
 
-    $pb->assign('menu',  $menu);
-    $pb->assign('paging',  $paging);
+    $pb->assign('menu', $menu);
+    $pb->assign('paging', $paging);
     $pb->assign('currentHashType', $currentHashType);
     $pb->assign('currentHashView', $hashView);
-    $pb->assign('currentPage',  (int) $currentPage);
+    $pb->assign('currentPage', (int) $currentPage);
     $pb->assign('maxPage', (int) $maxPage);
     $pb->assign('currentItemHash', $currentItemHash);
     $pb->assign('nbItems', $nbItems);
@@ -618,7 +634,7 @@ if (isset($_GET['login'])) {
     $kf->loadData();
     $pb->assign('page', 'edit');
     $pb->assign('pagetitle', Intl::msg('Edit').' - '.strip_tags($kfc->title));
-    
+
     $hash = substr(trim($_GET['edit'], '/'), 0, 6);
     // type : 'feed', 'folder', 'all', 'item'
     $type = $kf->hashType($currentHash);
@@ -766,33 +782,65 @@ if (isset($_GET['login'])) {
     $kf->loadData();
     $item = $kf->getItem($_GET['shaarli'], false);
     $shaarli = $kfc->shaarli;
-    // remove sel used with javascript
-    $shaarli = str_replace('${sel}', '', $shaarli);
+    if (!empty($shaarli)) {
+        // remove sel used with javascript
+        $shaarli = str_replace('${sel}', '', $shaarli);
 
-    $url = htmlspecialchars_decode($item['link']);
-    $via = htmlspecialchars_decode($item['via']);
-    $title = htmlspecialchars_decode($item['title']);
+        $url = htmlspecialchars_decode($item['link']);
+        $via = htmlspecialchars_decode($item['via']);
+        $title = htmlspecialchars_decode($item['title']);
 
-    if (parse_url($url, PHP_URL_HOST) !== parse_url($via, PHP_URL_HOST)) {
-        $via = 'via '.$via;
+        if (parse_url($url, PHP_URL_HOST) !== parse_url($via, PHP_URL_HOST)) {
+            $via = 'via '.$via;
+        } else {
+            $via = '';
+        }
+
+        $shaarli = str_replace('${url}', urlencode($url), $shaarli);
+        $shaarli = str_replace('${title}', urlencode($title), $shaarli);
+        $shaarli = str_replace('${via}', urlencode($via), $shaarli);
+
+        header('Location: '.$shaarli);
     } else {
-        $via = '';
+        $pb->assign('message', Intl::msg('Please configure your share link first'));
+        $pb->renderPage('message');
     }
-
-    $shaarli = str_replace('${url}', urlencode($url), $shaarli);
-    $shaarli = str_replace('${title}', urlencode($title), $shaarli);
-    $shaarli = str_replace('${via}', urlencode($via), $shaarli);
-
-    header('Location: '.$shaarli);
 } elseif (isset($_GET['file'])) {
-    if ($_GET['file'] == 'favicon') {
+    $gmtTime = gmdate('D, d M Y H:i:s', filemtime(__FILE__)) . ' GMT';
+    $etag = '"'.md5($gmtTime).'"';
+
+    header("Cache-Control:");
+    header("Pragma:");
+
+    header("Last-Modified: $gmtTime");
+    header("ETag: $etag");
+
+    $if_modified_since = isset($_SERVER['HTTP_IF_MODIFIED_SINCE']) ? $_SERVER['HTTP_IF_MODIFIED_SINCE'] : false;
+    $if_none_match = isset($_SERVER['HTTP_IF_NONE_MATCH']) ? $_SERVER['HTTP_IF_NONE_MATCH'] : false;
+    if (($if_none_match && $if_none_match == $etag) ||
+        ($if_modified_since && $if_modified_since == $gmtTime)) {
+        header('HTTP/1.1 304 Not Modified');
+        exit();
+    }
+    
+    if ($_GET['file'] == 'favicon.ico') {
+        header('Content-Type: image/vnd.microsoft.icon');
         $favicon = '
 <?php include("inc/favicon.ico"); ?>
 ';
-        header('Content-Type: image/vnd.microsoft.icon');
         echo base64_decode($favicon);
-        exit();
+    } else if ($_GET['file'] == 'style.css') {
+        header('Content-type: text/css');
+?>
+<?php include("inc/style.css"); ?>
+<?php        
+    } else if ($_GET['file'] == 'script.js') {
+        header('Content-type: text/javascript');
+?>
+<?php include("inc/script.js"); ?>
+<?php
     }
+    exit();
 } else {
     if (($kfc->isLogged() || $kfc->visibility === 'protected') && !isset($_GET['password']) && !isset($_GET['help']) && !isset($_GET['update']) && !isset($_GET['config']) && !isset($_GET['import']) && !isset($_GET['export']) && !isset($_GET['add']) && !isset($_GET['toggleFolder']) && !isset($_GET['read']) && !isset($_GET['unread']) && !isset($_GET['edit'])) {
         $kf->loadData();
@@ -829,7 +877,7 @@ if (isset($_GET['login'])) {
             if (isset($_GET['next'])) {
                 if ($index < count($listHash)-1) {
                     $index++;
-                } 
+                }
             }
 
             if (isset($_GET['previous'])) {
@@ -883,11 +931,11 @@ if (isset($_GET['login'])) {
 
         $menu = $kfc->getMenu();
         $paging = $kfc->getPaging();
-        $pb->assign('menu',  $menu);
-        $pb->assign('paging',  $paging);
+        $pb->assign('menu', $menu);
+        $pb->assign('paging', $paging);
         $pb->assign('currentHashType', $currentHashType);
         $pb->assign('currentHashView', $hashView);
-        $pb->assign('currentPage',  (int) $currentPage);
+        $pb->assign('currentPage', (int) $currentPage);
         $pb->assign('maxPage', (int) $maxPage);
         $pb->assign('currentItemHash', $currentItemHash);
         $pb->assign('nbItems', $nbItems);
