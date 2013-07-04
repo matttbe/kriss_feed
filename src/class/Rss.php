@@ -261,6 +261,7 @@ class Rss
         }
 
         // list of format for each info in order of importance
+        // WORKAROUND matttbe: some versions of xml have problems to load namespaces... ':' => '_'
         $formats = array(
             'author'      => array('author', 'creator', 'dc_author',
                                    'dc_creator'),

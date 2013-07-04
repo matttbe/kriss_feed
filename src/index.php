@@ -3099,14 +3099,12 @@ class Feed
             if ($outputUrl['code'] != 304) { // 304 Not modified
                 $feed['error'] = Intl::msg('Empty output data');;
             }
-
-            // some versions of xml have problems to load namespaces...
+        } else {
+            // WORKAROUND matttbe: some versions of xml have problems to load namespaces...
             $fromStr = array ("<dc:", "</dc:", "content:encoded>", "feedburner:origLink>");
             $toStr   = array ("<dc_", "</dc_", "content_encoded>", "feedburner_origLink>");
-            $newOutputData = str_replace($fromStr, $toStr, $output['data']);
-            $document->loadXML($newOutputData);
-        } else {
-            $outputDom = Rss::loadDom($outputUrl['data']);
+            $newOutputData = str_replace($fromStr, $toStr, $outputUrl['data']);
+            $outputDom = Rss::loadDom($newOutputData);
             if (!empty($outputDom['error'])) {
                 $feed['error'] = $outputDom['error'];
             } else {
@@ -4861,6 +4859,7 @@ class Rss
         }
 
         // list of format for each info in order of importance
+        // WORKAROUND matttbe: some versions of xml have problems to load namespaces... ':' => '_'
         $formats = array(
             'author'      => array('author', 'creator', 'dc_author',
                                    'dc_creator'),
