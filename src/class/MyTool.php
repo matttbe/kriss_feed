@@ -54,6 +54,8 @@ class MyTool
             curl_setopt($ch, CURLOPT_BINARYTRANSFER, true);
             curl_setopt($ch, CURLOPT_URL, $url);
             curl_setopt($ch, CURLOPT_HEADER, true);
+            if (strpos($url,'github') !== false || strpos($url,'bitbucket') !== false) // WORKAROUND Matttbe
+                curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false); // security... but avoid error when parsing these services
 
             if ((!ini_get('open_basedir') && !ini_get('safe_mode')) || $redirects < 1) {
                 curl_setopt($ch, CURLOPT_FOLLOWLOCATION, $redirects > 0);
