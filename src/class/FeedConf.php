@@ -106,6 +106,11 @@ class FeedConf
     public $blank = false;
 
     /**
+     * Hide read items (when using filter === 'unread')
+     */
+    public $hideReadItems = true;
+
+    /**
      * Visibility public/protected/private feed reader
      */
     public $visibility = 'private';
@@ -680,6 +685,16 @@ class FeedConf
     }
 
     /**
+     * Hide Read Items setter
+     *
+     * @param bool $hideReadItems New hideReadItems
+     */
+    public function setHideReadItems($hideReadItems)
+    {
+        $this->hideReadItems = $hideReadItems;
+    }
+
+    /**
      * Get menu
      *
      * @return array of menu sorted elements
@@ -859,7 +874,7 @@ class FeedConf
                           'menuListFeeds', 'menuFilter', 'menuOrder', 'menuUpdate',
                           'menuRead', 'menuUnread', 'menuEdit', 'menuAdd', 'menuHelp', 'menuStars',
                           'pagingItem', 'pagingPage', 'pagingByPage', 'addFavicon', 'preload',
-                          'pagingMarkAs', 'disableSessionProtection', 'blank', 'lang');
+                          'pagingMarkAs', 'disableSessionProtection', 'blank', 'hideReadItems', 'lang');
             $out = '<?php';
             $out .= "\n";
             foreach ($data as $key) {

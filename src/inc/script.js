@@ -22,6 +22,7 @@
       stars = false, // data-stars
       isLogged = false, // data-is-logged
       blank = false, // data-blank
+      hideReadItems = true, // data-hide-read-items
       status = '',
       listUpdateFeeds = [],
       listItemsHash = [],
@@ -617,7 +618,9 @@
             '&page=' + currentPage +
             '&last=' + listItemsHash[listItemsHash.length - 1];
 
-          removeElement(item);
+          if (hideReadItems) {
+            removeElement(item);
+          }
           indexItem = listItemsHash.indexOf(itemHash);
           listItemsHash.splice(listItemsHash.indexOf(itemHash), 1);
           if (listItemsHash.length <= byPage) {
@@ -1894,6 +1897,10 @@
     if (elementIndex.hasAttribute('data-blank')) {
       blank = parseInt(elementIndex.getAttribute('data-blank'), 10);
       blank = (blank === 1)?true:false;
+    }
+    if (elementIndex.hasAttribute('data-hide-read-items')) {
+      hideReadItems = parseInt(elementIndex.getAttribute('data-hide-read-items'), 10);
+      hideReadItems = (hideReadItems === 1)?true:false;
     }
     if (elementIndex.hasAttribute('data-is-logged')) {
       isLogged = parseInt(elementIndex.getAttribute('data-is-logged'), 10);

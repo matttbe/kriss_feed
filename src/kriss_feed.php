@@ -185,6 +185,7 @@ $pb->assign('autoupdate', $kfc->autoUpdate);
 $pb->assign('addFavicon', $kfc->addFavicon);
 $pb->assign('preload', $kfc->preload);
 $pb->assign('blank', $kfc->blank);
+$pb->assign('hideReadItems', $kfc->hideReadItems);
 $pb->assign('kf', $kf);
 $pb->assign('isLogged', $kfc->isLogged());
 $pb->assign('pagetitle', strip_tags($kfc->title));
@@ -429,6 +430,7 @@ if (isset($_GET['login'])) {
         $pb->assign('kfcaddfavicon', (int) $kfc->addFavicon);
         $pb->assign('kfcpreload', (int) $kfc->preload);
         $pb->assign('kfcblank', (int) $kfc->blank);
+        $pb->assign('kfchidereaditems', (int) $kfc->hideReadItems);
         $pb->assign('kfcdisablesessionprotection', (int) $kfc->disableSessionProtection);
         $pb->assign('kfcmenu', $menu);
         $pb->assign('kfcpaging', $paging);

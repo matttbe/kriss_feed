@@ -345,6 +345,19 @@ msgstr ""
 msgid "Automatically open link in new tab"
 msgstr ""
 
+msgid "Hide read next item option"
+msgstr ""
+
+msgid ""
+"Hide an item when marking it as read (when displaying only unread items in "
+"the expanded view)"
+msgstr ""
+
+msgid ""
+"Do not hide an item when marking it as read (when displaying only unread "
+"items in the expanded view)"
+msgstr ""
+
 msgid "Auto update with javascript"
 msgstr ""
 

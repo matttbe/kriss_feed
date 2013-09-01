@@ -204,6 +204,20 @@
                   </div>
 
                   <div class="control-group">
+                    <label class="control-label"><?php echo Intl::msg('Hide read next item option'); ?></label>
+                    <div class="controls">
+                      <label for="dohidereaditem">
+                        <input type="radio" id="dohidereaditem" name="hideReadItems" value="1" <?php echo ($kfchidereaditems ? 'checked="checked"' : ''); ?>/>
+                        <?php echo Intl::msg('Hide an item when marking it as read (when displaying only unread items in the expanded view)'); ?>
+                      </label>
+                      <label for="donothidereaditem">
+                        <input type="radio" id="donothidereaditem" name="hideReadItems" value="0" <?php echo (!$kfchidereaditems ? 'checked="checked"' : ''); ?>/>
+                        <?php echo Intl::msg('Do not hide an item when marking it as read (when displaying only unread items in the expanded view)'); ?>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div class="control-group">
                     <label class="control-label"><?php echo Intl::msg('Auto update with javascript'); ?></label>
                     <div class="controls">
                       <label for="donotautoupdate">
